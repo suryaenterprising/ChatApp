@@ -82,6 +82,27 @@ Open:
 https://chat.example.com
 ```
 
+## Optional: deploy from GitHub Actions
+
+The repo includes `.github/workflows/deploy.yml`. It uploads the project to `/opt/hush-chat` on your VPS and runs Docker Compose.
+
+Add these GitHub repository secrets before running the workflow:
+
+```text
+VPS_HOST           your VPS IP or hostname
+VPS_USER           SSH username, for example root or ubuntu
+VPS_SSH_KEY        private SSH key with access to the VPS
+APP_DOMAIN         chat.example.com
+TURN_DOMAIN        turn.example.com
+PUBLIC_IP          your VPS public IP
+ACME_EMAIL         you@example.com
+TURN_AUTH_SECRET   same secret used by coturn and the app
+```
+
+Then open GitHub → **Actions** → **Deploy to VPS** → **Run workflow**.
+
+The VPS must already have Docker and Docker Compose installed.
+
 ## 5. Test real long-distance pairing
 
 1. Open `https://chat.example.com` on device A.

@@ -1,0 +1,43 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload project
+        run: |
+          rsync -az --delete \
+            --exclude ".git" \
+            --exclude "node_modules" \
+            --exclude "dist" \
+            --exclude ".env" \
+            ./ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/hush-chat/"
+
+      - name: Write production environment
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'cat > /opt/hush-chat/.env << "HUSH_ENV"
+          APP_DOMAIN=${{ secrets.APP_DOMAIN }}
+          TURN_DOMAIN=${{ secrets.TURN_DOMAIN }}
+          PUBLIC_IP=${{ secrets.PUBLIC_IP }}
+          ACME_EMAIL=${{ secrets.ACME_EMAIL }}
+          TURN_AUTH_SECRET=${{ secrets.TURN_AUTH_SECRET }}
+          TURN_TTL_SECONDS=86400
+          HUSH_ENV'
+
+      - name: Start Docker stack
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "cd /opt/hush-chat && docker compose --env-file .env up -d --build"
